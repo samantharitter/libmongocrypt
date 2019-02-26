@@ -78,6 +78,7 @@
 const char *
 tmp_json (const bson_t *bson);
 
+
 void
 _mongocrypt_set_error (mongocrypt_status_t *status,
                        mongocrypt_error_type_t type,
@@ -194,5 +195,19 @@ _mongocrypt_transform_binary_in_bson (_mongocrypt_transform_callback_t cb,
                                       bson_iter_t iter,
                                       bson_t *out,
                                       mongocrypt_status_t *status);
+
+/* Global accessors */
+
+struct mongocrypt_schema_cache_t;
+typedef struct mongocrypt_schema_cache_t _mongocrypt_schema_cache_t;
+
+struct mongocrypt_key_cache_t;
+typedef struct mongocrypt_key_cache_t _mongocrypt_key_cache_t;
+
+_mongocrypt_schema_cache_t *
+_mongocrypt_schema_cache (mongocrypt_t *crypt);
+
+_mongocrypt_key_cache_t *
+_mongocrypt_key_cache (mongocrypt_t *crypt);
 
 #endif

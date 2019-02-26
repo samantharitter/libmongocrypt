@@ -28,6 +28,7 @@ if(MONGOC_STATIC_VERSION)
       src/mongocrypt.c
       src/mongocrypt-binary.c
       src/mongocrypt-buffer.c
+      src/mongocrypt-encrypter.c
       src/mongocrypt-crypto.c
       src/mongocrypt-key-query.c
       src/mongocrypt-kms.c
