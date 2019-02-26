@@ -22,6 +22,7 @@
 #include "mongocrypt-private.h"
 #include "mongocrypt-opts-private.h"
 #include "mongocrypt-request-private.h"
+#include "mongocrypt-schema-cache-private.h"
 #include "mongocrypt-status-private.h"
 
 static void
@@ -162,6 +163,8 @@ mongocrypt_new (const mongocrypt_opts_t *opts, mongocrypt_status_t *status)
                                      MONGOC_ERROR_API_VERSION_2);
    crypt->opts = mongocrypt_opts_copy (opts);
    mongocrypt_mutex_init (&crypt->mutex);
+
+   crypt->schema_cache = _mongocrypt_schema_cache_new ();
 
    crypt->cache = _mongocrypt_key_cache_new (_mongocrypt_kms_decrypt, crypt);
    success = true;
@@ -704,4 +707,16 @@ fail:
       bson_free (results);
    }
    return ret;
+}
+
+_mongocrypt_schema_cache_t *
+_mongocrypt_schema_cache (mongocrypt_t *crypt)
+{
+   return crypt->schema_cache;
+}
+
+_mongocrypt_key_cache_t *
+_mongocrypt_key_cache (mongocrypt_t *crypt)
+{
+   return crypt->cache;
 }

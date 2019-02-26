@@ -8,6 +8,7 @@
 #include "mongocrypt-key-cache-private.h"
 #include "mongocrypt-key-query-private.h"
 #include "mongocrypt-mutex-private.h"
+#include "mongocrypt-schema-cache-private.h"
 
 #define MONGOCRYPT_MAC_KEY_LEN 32
 #define MONGOCRYPT_ENC_KEY_LEN 32
@@ -97,7 +98,8 @@ struct _mongocrypt_t {
    mongoc_client_pool_t *mongocryptd_pool;
    mongocrypt_opts_t *opts;
    mongocrypt_mutex_t mutex;
-   /* The cache has its own interal mutex. */
+   _mongocrypt_schema_cache_t *schema_cache;
+   /* The key cache has its own interal mutex. */
    _mongocrypt_key_cache_t *cache;
 };
 
@@ -197,13 +199,6 @@ _mongocrypt_transform_binary_in_bson (_mongocrypt_transform_callback_t cb,
                                       mongocrypt_status_t *status);
 
 /* Global accessors */
-
-struct mongocrypt_schema_cache_t;
-typedef struct mongocrypt_schema_cache_t _mongocrypt_schema_cache_t;
-
-struct mongocrypt_key_cache_t;
-typedef struct mongocrypt_key_cache_t _mongocrypt_key_cache_t;
-
 _mongocrypt_schema_cache_t *
 _mongocrypt_schema_cache (mongocrypt_t *crypt);
 
