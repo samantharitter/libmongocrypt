@@ -54,6 +54,23 @@ mongocrypt_status_ok (mongocrypt_status_t *status)
 
 
 void
+mongocrypt_status_reset (mongocrypt_status_t *status)
+{
+   if (!status) {
+      return;
+   }
+
+   status->type = MONGOCRYPT_ERROR_TYPE_NONE;
+   status->code = 0;
+
+   bson_free (status->ctx);
+   status->ctx = NULL;
+
+   memset (status->message, 0, 1024);
+}
+
+
+void
 mongocrypt_status_destroy (mongocrypt_status_t *status)
 {
    if (!status) {

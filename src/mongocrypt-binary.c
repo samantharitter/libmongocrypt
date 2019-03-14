@@ -30,7 +30,7 @@ mongocrypt_binary_new ()
 
 
 void
-mongocrypt_binary_to_bson (mongocrypt_binary_t *binary, bson_t *out)
+mongocrypt_binary_to_bson (const mongocrypt_binary_t *binary, bson_t *out)
 {
    bson_init_static (out, binary->data, binary->len);
 }

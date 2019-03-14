@@ -26,4 +26,7 @@ struct _mongocrypt_status_t {
    void *ctx;
 };
 
+void
+mongocrypt_status_clear (mongocrypt_status_t *status);
+
 #endif /* MONGOCRYPT_STATUS_PRIVATE_H */

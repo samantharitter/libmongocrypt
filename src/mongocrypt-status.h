@@ -51,5 +51,7 @@ mongocrypt_status_message (mongocrypt_status_t *status);
 bool
 mongocrypt_status_ok (mongocrypt_status_t *status);
 
+void
+mongocrypt_status_reset (mongocrypt_status_t *status);
 
 #endif /* MONGOCRYPT_STATUS_H */

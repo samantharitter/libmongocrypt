@@ -31,7 +31,6 @@ struct _mongocrypt_encryptor_t {
    const char *ns;
    mongocrypt_binary_t *schema;
    bson_t *marked;
-   mongocrypt_binary_t *filter;
    mongocrypt_binary_t *encrypted_cmd;
 };
 

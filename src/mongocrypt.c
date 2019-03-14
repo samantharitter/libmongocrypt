@@ -49,17 +49,20 @@ _mongocrypt_set_error (mongocrypt_status_t *status,
                        const char *format,
                        ...)
 {
+   size_t max_msg_len;
+   int len;
    va_list args;
 
    if (status) {
+      max_msg_len = sizeof status->message;
       status->type = type;
       status->code = code;
 
       va_start (args, format);
-      bson_vsnprintf (status->message, sizeof status->message, format, args);
+      len = bson_vsnprintf (status->message, max_msg_len - 1, format, args);
       va_end (args);
 
-      status->message[sizeof status->message - 1] = '\0';
+      status->message[len] = '\0';
    }
 }
 

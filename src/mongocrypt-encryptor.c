@@ -59,7 +59,6 @@ mongocrypt_encryptor_new (mongocrypt_t *crypt)
    encryptor->crypt = crypt;
    encryptor->status = mongocrypt_status_new ();
    encryptor->encrypted_cmd = mongocrypt_binary_new ();
-   encryptor->filter = mongocrypt_binary_new ();
    encryptor->schema = mongocrypt_binary_new ();
    _mongocrypt_key_broker_init (&encryptor->kb);
 
@@ -537,7 +536,6 @@ mongocrypt_encryptor_destroy (mongocrypt_encryptor_t *encryptor)
       return;
    }
 
-   mongocrypt_binary_destroy (encryptor->filter);
    mongocrypt_binary_destroy (encryptor->schema);
    mongocrypt_binary_destroy (encryptor->encrypted_cmd);
    bson_destroy (encryptor->marked);

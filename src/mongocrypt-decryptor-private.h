@@ -28,10 +28,8 @@ struct _mongocrypt_decryptor_t {
 
    mongocrypt_key_broker_t kb;
 
-   mongocrypt_binary_t *filter;
    mongocrypt_binary_t *encrypted_doc;
    mongocrypt_binary_t *decrypted_doc;
 };
-
 
 #endif /* MONGOCRYPT_DECRYPTOR_PRIVATE_H */

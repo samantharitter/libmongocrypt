@@ -144,9 +144,8 @@ mongocrypt_decryptor_add_doc (mongocrypt_decryptor_t *decryptor,
       goto done;
    }
 
-   /* TODO this is only for testing, remove */
    if (!encrypted_doc) {
-      decryptor->state = MONGOCRYPT_DECRYPTOR_STATE_NEED_KEYS;
+      decryptor->state = MONGOCRYPT_DECRYPTOR_STATE_ERROR;
       goto done;
    }
 
@@ -331,7 +330,7 @@ mongocrypt_decryptor_status (mongocrypt_decryptor_t *decryptor)
 
 
 mongocrypt_binary_t *
-mongocrypt_decryptor_decrypted_doc (mongocrypt_decryptor_t *decryptor)
+mongocrypt_decryptor_decrypted_cmd (mongocrypt_decryptor_t *decryptor)
 {
    BSON_ASSERT (decryptor);
 
@@ -351,7 +350,6 @@ mongocrypt_decryptor_destroy (mongocrypt_decryptor_t *decryptor)
    }
 
    mongocrypt_binary_destroy (decryptor->encrypted_doc);
-   mongocrypt_binary_destroy (decryptor->filter);
    mongocrypt_status_destroy (decryptor->status);
    _mongocrypt_key_broker_cleanup (&decryptor->kb);
 
