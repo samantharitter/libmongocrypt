@@ -23,7 +23,10 @@ struct _mongocrypt_status_t {
    mongocrypt_error_type_t type;
    uint32_t code;
    char message[1024];
-   void *ctx;
 };
+
+void
+mongocrypt_status_set_equal (mongocrypt_status_t *dst,
+			     mongocrypt_status_t *src);
 
 #endif /* MONGOCRYPT_STATUS_PRIVATE_H */

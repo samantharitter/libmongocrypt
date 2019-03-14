@@ -121,7 +121,8 @@ _collect_key_from_ciphertext (void *ctx,
    }
 
    if (!_mongocrypt_key_broker_add_id (
-          &decryptor->kb, &ciphertext.key_id, status)) {
+          &decryptor->kb, &ciphertext.key_id)) {
+      mongocrypt_status_set_equal (decryptor->status, kb->status);
       return false;
    }
 
@@ -237,7 +238,7 @@ _replace_ciphertext_with_plaintext (void *ctx,
 
    /* look up the key */
    key_material = _mongocrypt_key_broker_decrypted_key_material_by_id (
-      &decryptor->kb, &ciphertext.key_id, status);
+      &decryptor->kb, &ciphertext.key_id);
    if (!key_material) {
       /* We allow partial decryption, so this is not an error. */
       _mongocrypt_log (MONGOCRYPT_LOG_LEVEL_WARNING,
