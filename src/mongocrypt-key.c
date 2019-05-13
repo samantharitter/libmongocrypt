@@ -155,6 +155,9 @@ _mongocrypt_key_destroy (_mongocrypt_key_doc_t *key)
 void
 _mongocrypt_key_doc_copy_to (_mongocrypt_key_doc_t *src,
                              _mongocrypt_key_doc_t *dst) {
+   BSON_ASSERT (src);
+   BSON_ASSERT (dst);
+
    _mongocrypt_buffer_copy_to (&src->id, &dst->id);
    _mongocrypt_buffer_copy_to (&src->key_material, &dst->key_material);
    dst->masterkey_provider = src->masterkey_provider;

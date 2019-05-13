@@ -429,12 +429,12 @@ static bool
 _try_retrieving_from_cache (_mongocrypt_key_broker_t *kb,
                             _mongocrypt_key_broker_entry_t *kbe)
 {
-   _mongocrypt_cache_key_value_t *value;
+   _mongocrypt_cache_key_value_t *value = NULL;
+   mongocrypt_status_t *status;
+
+   status = kb->status;
 
    if (kbe->state != KEY_EMPTY) {
-      mongocrypt_status_t *status;
-
-      status = kb->status;
       CLIENT_ERR ("trying to retrieve key from cache in invalid state");
       return false;
    }
@@ -444,13 +444,28 @@ _try_retrieving_from_cache (_mongocrypt_key_broker_t *kb,
       return false;
    }
 
-   if (value) {
-      kbe->state = KEY_DECRYPTED;
-      _mongocrypt_key_doc_copy_to (&value->key_doc, &kbe->key_returned);
-      _mongocrypt_buffer_copy_to (&value->decrypted_key_material,
-                                  &kbe->decrypted_key_material);
-      _mongocrypt_cache_key_value_destroy (value);
+   if (!value) {
+      /* A cache miss is not an error, so return true. */
+      return true;
    }
+
+   if (!value->key_doc) {
+      CLIENT_ERR ("key in cache has no stored document");
+      return false;
+   }
+
+   if (_mongocrypt_buffer_empty (&value->decrypted_key_material)) {
+      CLIENT_ERR ("key in cache has no decrypted value");
+      return false;
+   }
+
+   kbe->state = KEY_DECRYPTED;
+   kbe->key_returned = _mongocrypt_key_new ();
+   _mongocrypt_key_doc_copy_to (value->key_doc, kbe->key_returned);
+   _mongocrypt_buffer_copy_to (&value->decrypted_key_material,
+			       &kbe->decrypted_key_material);
+   _mongocrypt_cache_key_value_destroy (value);
+
    return true;
 }
 
@@ -468,11 +483,12 @@ _store_to_cache (_mongocrypt_key_broker_t *kb,
       return false;
    }
 
-   value = _mongocrypt_cache_key_value_new (&kbe->key_returned,
+   value = _mongocrypt_cache_key_value_new (kbe->key_returned,
                                             &kbe->decrypted_key_material);
    ret = _mongocrypt_cache_add_stolen (
       kb->cache_key, &kbe->key_id, value, kb->status);
    return ret;
+}
 
 static void
 _add_new_key_entry (_mongocrypt_key_broker_t *kb,

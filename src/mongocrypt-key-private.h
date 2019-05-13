@@ -45,6 +45,7 @@ void
 _mongocrypt_key_doc_copy_to (_mongocrypt_key_doc_t *src,
                              _mongocrypt_key_doc_t *dst);
 
+void
 _mongocrypt_key_destroy (_mongocrypt_key_doc_t *key);
 
 

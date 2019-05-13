@@ -60,7 +60,7 @@ _set_binary_opt (mongocrypt_ctx_t *ctx,
    }
 
    _mongocrypt_buffer_copy_from_binary (buf, binary);
-   buf.subtype = BSON_SUBTYPE_UUID;
+   buf->subtype = BSON_SUBTYPE_UUID;
 
    return true;
 }
