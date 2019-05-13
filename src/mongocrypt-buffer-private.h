@@ -42,8 +42,7 @@ _mongocrypt_buffer_resize (_mongocrypt_buffer_t *buf, uint32_t len);
 
 
 void
-_mongocrypt_buffer_steal (_mongocrypt_buffer_t *buf,
-                          _mongocrypt_buffer_t *src);
+_mongocrypt_buffer_steal (_mongocrypt_buffer_t *buf, _mongocrypt_buffer_t *src);
 
 
 /* @iter is iterated to a BSON binary value. */
@@ -83,7 +82,7 @@ bool
 _mongocrypt_buffer_to_bson (const _mongocrypt_buffer_t *buf, bson_t *bson);
 
 
-void
+bool
 _mongocrypt_buffer_append (const _mongocrypt_buffer_t *buf,
                            bson_t *bson,
                            const char *key,
@@ -123,6 +122,6 @@ _mongocrypt_buffer_cleanup (_mongocrypt_buffer_t *buf);
 
 
 bool
-_mongocrypt_buffer_empty (_mongocrypt_buffer_t *buf);
+_mongocrypt_buffer_empty (const _mongocrypt_buffer_t *buf);
 
 #endif /* MONGOCRYPT_BUFFER_H */

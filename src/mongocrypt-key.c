@@ -45,6 +45,13 @@ _mongocrypt_key_parse_owned (const bson_t *bson,
       goto cleanup;
    }
 
+   /* keyAltName (optional) */
+   if (bson_iter_init_find (&iter, bson, "keyAltNames")) {
+      /* CDRIVER-3100 We must make a copy here */
+      bson_value_copy (bson_iter_value (&iter), &out->key_alt_names);
+      out->has_alt_names = true;
+   }
+
    /* keyMaterial */
    if (!bson_iter_init_find (&iter, bson, "keyMaterial")) {
       CLIENT_ERR ("invalid key, no 'keyMaterial'");
@@ -116,12 +123,32 @@ cleanup:
 }
 
 
-void
-_mongocrypt_key_cleanup (_mongocrypt_key_doc_t *key)
+_mongocrypt_key_doc_t *
+_mongocrypt_key_new ()
 {
+   _mongocrypt_key_doc_t *key_doc;
+
+   key_doc = (_mongocrypt_key_doc_t *) bson_malloc0 (sizeof *key_doc);
+
+   return key_doc;
+}
+
+
+void
+_mongocrypt_key_destroy (_mongocrypt_key_doc_t *key)
+{
+   if (!key) {
+      return;
+   }
+
    _mongocrypt_buffer_cleanup (&key->id);
+   if (key->has_alt_names) {
+      bson_value_destroy (&key->key_alt_names);
+   }
    _mongocrypt_buffer_cleanup (&key->key_material);
    bson_free (key->masterkey_region);
+   bson_free (key->masterkey_cmk);
+   bson_free (key);
 }
 
 
