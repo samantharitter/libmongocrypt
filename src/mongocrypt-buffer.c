@@ -199,7 +199,7 @@ _mongocrypt_buffer_copy_to (const _mongocrypt_buffer_t *src,
    BSON_ASSERT (src);
    BSON_ASSERT (dst);
 
-   /* TODO: reset dst first to avoid leaks here */
+   _mongocrypt_buffer_cleanup (dst);
    dst->data = bson_malloc ((size_t) src->len);
    memcpy (dst->data, src->data, src->len);
    dst->len = src->len;

@@ -40,6 +40,9 @@ _mongocrypt_key_parse_owned (const bson_t *bson,
 _mongocrypt_key_doc_t *
 _mongocrypt_key_new ();
 
+bool
+_mongocrypt_key_equal (const _mongocrypt_key_doc_t *a,
+		       const _mongocrypt_key_doc_t *b);
 
 void
 _mongocrypt_key_doc_copy_to (_mongocrypt_key_doc_t *src,

@@ -479,6 +479,7 @@ _test_key_broker_add_decrypted_key (_mongocrypt_tester_t *tester)
    _mongocrypt_key_broker_cleanup (&key_broker);
 
    /* With both key ids and key alt names, some referring to the same key */
+   fprintf (stderr, "THIS TEST ====================>\n");
    _mongocrypt_key_broker_init (&key_broker, &crypt->opts, &crypt->cache_key);
    ASSERT_OK (_mongocrypt_key_broker_add_id (&key_broker, &key_id1),
               &key_broker);

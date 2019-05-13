@@ -125,6 +125,50 @@ _kbe_set_id (_mongocrypt_key_broker_entry_t *kbe,
    _mongocrypt_buffer_copy_to (id, &kbe->key_id);
 }
 
+static void
+_kbe_print (_mongocrypt_key_broker_entry_t *kbe)
+{
+   _key_alt_name_t *ptr;
+
+   if (!_mongocrypt_buffer_empty (&kbe->key_id)) {
+      const char *id;
+
+      id = tmp_buf (&kbe->key_id);
+      fprintf (stderr, "id: %s ", id);
+   }
+
+   fprintf (stderr, "names: ");
+
+   ptr = kbe->key_alt_names;
+   while (ptr) {
+      fprintf (stderr, "%s, ", ptr->value.value.v_utf8.str);
+      ptr = ptr->next;
+   }
+
+   fprintf (stderr, "state: ");
+
+   switch (kbe->state) {
+   case KEY_EMPTY:
+      fprintf (stderr, "KEY_EMPTY");
+      break;
+   case KEY_ENCRYPTED:
+      fprintf (stderr, "KEY_ENCRYPTED");
+      break;
+   case KEY_DECRYPTING:
+      fprintf (stderr, "KEY_DECRYPTING");
+      break;
+   case KEY_DECRYPTED:
+      fprintf (stderr, "KEY_DECRYPTED");
+      break;
+   case KEY_ERROR:
+      fprintf (stderr, "KEY_ERROR");
+      break;
+   }
+
+
+   fprintf (stderr, "\n");
+}
+
 
 static void
 _kbe_destroy (_mongocrypt_key_broker_entry_t *kbe)
@@ -191,6 +235,35 @@ _foreach_with_condition (_mongocrypt_key_broker_t *kb,
    return true;
 }
 
+/* Helper for print debugging */
+static bool 
+_always_return_true (_mongocrypt_key_broker_entry_t *kbe, void *ctx)
+{
+   return true;
+}
+
+static bool
+_print_single_kbe (_mongocrypt_key_broker_entry_t *kbe, void *ctx)
+{
+   _kbe_print (kbe);
+   return true;
+}
+
+static void
+_print_entries (_mongocrypt_key_broker_t *kb)
+{
+   fprintf (stderr, "=======================================\n");
+   fprintf (stderr, "Key broker entries:\n");
+
+   _foreach_with_condition (kb,
+			    _always_return_true,
+			    NULL,
+			    _print_single_kbe,
+			    NULL);
+
+   fprintf (stderr, "=======================================\n");
+}
+
 
 typedef struct {
    _mongocrypt_key_broker_t *kb;
@@ -222,8 +295,25 @@ _deduplicate_entries (_mongocrypt_key_broker_entry_t *kbe, void *ctx)
       ptr = ptr->next;
    }
 
-   /* Remove the old key entry. */
+   /* If this key has a decrypted key, steal it, unless we
+      have a conflict, then error. */
+   if (kbe->key_returned) {
+      if (dedup_ctx->mega_entry->key_returned) {
+	 if (!_mongocrypt_key_equal (kbe->key_returned,
+				     dedup_ctx->mega_entry->key_returned)) {
+	    /* TODO CDRIVER-3125. For now, take the newer one. */
+	    _mongocrypt_key_destroy (dedup_ctx->mega_entry->key_returned);
+	 }
+      }
+
+      fprintf (stderr, "putting key doc in mega entry, state is %d\n", kbe->state);
+      dedup_ctx->mega_entry->state = kbe->state;
+      dedup_ctx->mega_entry->key_returned = kbe->key_returned;
+      kbe->key_returned = NULL;
+   }
+
    BSON_ASSERT (kbe->state != KEY_DECRYPTING);
+   /* Remove the old key entry. */
    if (kbe->prev) {
       kbe->prev->next = kbe->next;
    } else {
@@ -273,6 +363,7 @@ _kbe_matches_key_doc (_mongocrypt_key_broker_entry_t *kbe, void *ctx)
    bson_iter_t iter;
    bson_t names;
    bool name_match = false;
+   bool id_match = false;
 
    helper = (_key_doc_match_t *) ctx;
    key_doc = helper->key_doc;
@@ -301,24 +392,33 @@ _kbe_matches_key_doc (_mongocrypt_key_broker_entry_t *kbe, void *ctx)
 
    if (name_match) {
       /* If we have a name match and a returned key doc, then
-    the doc must also match our id or it is an error. */
+	 the doc must also match our id or it is an error. */
+      /* TODO CDRIVER-3125 clean this up with the logic below */
       if (kbe->key_returned) {
-         if (0 !=
-             _mongocrypt_buffer_cmp (&kbe->key_returned->id, &key_doc->id)) {
-            helper->error = true;
-            return false;
-         }
+	 if (0 != _mongocrypt_buffer_cmp (&kbe->key_returned->id,
+					  &key_doc->id)) {
+	    helper->error = true;
+	    return false;
+	 }
       }
-
-      /* We matched a name! Done. */
-      return true;
    }
 
    if (0 == _mongocrypt_buffer_cmp (&kbe->key_id, &key_doc->id)) {
-      return true;
+      id_match = true;
    }
 
-   return false;
+   /* If we match an entry with a decrypted key doc,
+      it should match our new one. */
+   if (name_match || id_match) {
+      if (kbe->key_returned) {
+	 if (!_mongocrypt_key_equal (kbe->key_returned,
+				     key_doc)) {
+	    /* TODO CDRIVER-3125 */
+	 }
+      }      
+   }
+
+   return (name_match || id_match);
 }
 
 static bool
@@ -460,6 +560,7 @@ _try_retrieving_from_cache (_mongocrypt_key_broker_t *kb,
    }
 
    kbe->state = KEY_DECRYPTED;
+   fprintf (stderr, "got a cache entry, set state to %d\n", kbe->state);
    kbe->key_returned = _mongocrypt_key_new ();
    _mongocrypt_key_doc_copy_to (value->key_doc, kbe->key_returned);
    _mongocrypt_buffer_copy_to (&value->decrypted_key_material,
@@ -539,6 +640,9 @@ _mongocrypt_key_broker_add_id (_mongocrypt_key_broker_t *kb,
    _mongocrypt_key_broker_entry_t *kbe = NULL;
    mongocrypt_status_t *status = kb->status;
 
+   fprintf (stderr, "key broker before adding entry\n");
+   _print_entries (kb);
+
    status = kb->status;
    if (key_id->subtype != BSON_SUBTYPE_UUID) {
       CLIENT_ERR ("expected UUID for key_id");
@@ -555,11 +659,15 @@ _mongocrypt_key_broker_add_id (_mongocrypt_key_broker_t *kb,
       return true;
    }
 
-   /* TODO CDRIVER-2951 check if we have this key cached. */
    kbe = _kbe_new ();
    _kbe_set_id (kbe, key_id);
    _add_new_key_entry (kb, kbe);
+   
+   fprintf (stderr, "key broker after adding entry\n");
+   _print_entries (kb);
 
+   /* If we have a cached decrypted key for this id, add
+      it to our local entry now. */
    if (!_try_retrieving_from_cache (kb, kbe)) {
       return false;
    }
@@ -649,10 +757,13 @@ _mongocrypt_key_broker_add_doc (_mongocrypt_key_broker_t *kb,
       CLIENT_ERR ("no matching key in the key broker");
       goto done;
    }
-
+   
    if (count_ctx.match_count > 1) {
       _deduplicate_ctx_t dedup_ctx;
 
+      fprintf (stderr, "key broker before deduplicating\n");
+      _print_entries (kb);
+      
       dedup_ctx.kb = kb;
       dedup_ctx.mega_entry = _kbe_new ();
 
@@ -670,11 +781,27 @@ _mongocrypt_key_broker_add_doc (_mongocrypt_key_broker_t *kb,
       kbe->prev = NULL;
       kb->kb_entry = kbe;
       kb->decryptor_iter = kbe;
+
+      fprintf (stderr, "key broker after deduplicating\n");
+      _print_entries (kb);
+
    } else {
       /* If we just found a single matching key, use it as-is. */
       kbe = _get_first_match_by_key_doc (kb, key);
       BSON_ASSERT (kbe);
    }
+
+   /* If our matching entry already has a key document,
+      it either came from our cache, or from deduplicating.
+      Either way, use theirs, not ours (TODO CDRIVER-3125) */
+   if (kbe->key_returned) {
+      fprintf (stderr, "found a returned key, state is %d\n", kbe->state);
+      ret = true;
+      goto done;
+   }
+
+   fprintf (stderr, "adding key doc to matching doc and setting to KEY_ENCRYPTED");
+   _kbe_print (kbe);
 
    /* We will now take ownership of the key document. */
    kbe->key_returned = key;
@@ -702,16 +829,19 @@ _mongocrypt_key_broker_add_doc (_mongocrypt_key_broker_t *kb,
                                              status);
 
       if (!crypt_ret) {
+	 fprintf (stderr, "failed to decrypt, early return\n");
          goto done;
       }
+
       kbe->state = KEY_DECRYPTED;
       _store_to_cache (kb, kbe);
 
    } else if (masterkey_provider == MONGOCRYPT_KMS_PROVIDER_AWS) {
+      fprintf (stderr, "provider is AWS\n");
       if (!_mongocrypt_kms_ctx_init_aws_decrypt (
 	 &kbe->kms, kb->crypt_opts, kbe->key_returned, kbe)) {
          mongocrypt_kms_ctx_status (&kbe->kms, status);
-
+	 fprintf (stderr, "aws decrypt init failed\n");
          goto done;
       }
    } else {
@@ -722,6 +852,7 @@ _mongocrypt_key_broker_add_doc (_mongocrypt_key_broker_t *kb,
    ret = true;
 
 done:
+   fprintf (stderr, "returning from add doc with this value: %d\n", ret);
    _mongocrypt_key_destroy (key);
 
    return ret;

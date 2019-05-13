@@ -134,6 +134,50 @@ _mongocrypt_key_new ()
 }
 
 
+bool
+_mongocrypt_key_equal (const _mongocrypt_key_doc_t *a,
+		       const _mongocrypt_key_doc_t *b)
+{
+   if (_mongocrypt_buffer_cmp (&a->id, &b->id) != 0) {
+      return false;
+   }
+
+   if (a->has_alt_names != b->has_alt_names) {
+      return false;
+   }
+
+   if (a->has_alt_names) {
+      BSON_ASSERT (a->key_alt_names.value_type == BSON_TYPE_UTF8);
+      BSON_ASSERT (b->key_alt_names.value_type == BSON_TYPE_UTF8);
+      if (0 != strcmp (a->key_alt_names.value.v_utf8.str,
+		       b->key_alt_names.value.v_utf8.str)) {
+	 return false;
+      }
+   }
+
+   if (0 != _mongocrypt_buffer_cmp (&a->key_material,
+				    &b->key_material)) {
+      return false;
+   }
+
+   if (a->masterkey_provider != b->masterkey_provider) {
+      return false;
+   }
+
+   if (0 != strcmp (a->masterkey_region, b->masterkey_region)) {
+      return false;
+   }
+
+   if (a->masterkey_cmk && b->masterkey_cmk) {
+      if (0 != strcmp (a->masterkey_cmk, b->masterkey_cmk)) {
+	 return false;
+      }
+   }
+
+   return true;
+}
+
+
 void
 _mongocrypt_key_destroy (_mongocrypt_key_doc_t *key)
 {
