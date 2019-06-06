@@ -211,8 +211,11 @@ kms_response_parser_feed (kms_response_parser_t *parser,
          break;
       case PARSING_BODY:
          body_read = (int) raw->len - parser->start;
-         assert (parser->content_length != -1);
-         assert (body_read <= parser->content_length);
+
+         if (parser->content_length == -1 ||
+             body_read > parser->content_length) {
+            return false;
+         }
 
          /* check if we have the entire body. */
          if (body_read == parser->content_length) {
@@ -224,7 +227,10 @@ kms_response_parser_feed (kms_response_parser_t *parser,
          curr = (int) raw->len;
          break;
       case PARSING_DONE:
-         /* return false if error. */
+         if (parser->failed) {
+            return false;
+         }
+
          return true;
       }
    }
