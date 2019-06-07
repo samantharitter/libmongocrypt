@@ -103,6 +103,13 @@ _assemble_bson (int num_markings,
    bson_t *bson;
    int i;
 
+   /* Field names only take single-digit add-ons, for now */
+   BSON_ASSERT (num_markings < 10);
+   BSON_ASSERT (num_deterministic < 10);
+   BSON_ASSERT (num_random < 10);
+   BSON_ASSERT (num_binary < 10);
+   BSON_ASSERT (num_other < 10);
+
    bson = bson_new ();
    memset (name, 0, 24);
 
@@ -114,13 +121,6 @@ _assemble_bson (int num_markings,
       parent = bson_new ();
       bson_append_array_begin (parent, "nested", 6, bson);
    }
-
-   /* Field names only take single-digit add-ons, for now */
-   BSON_ASSERT (num_markings < 10);
-   BSON_ASSERT (num_deterministic < 10);
-   BSON_ASSERT (num_random < 10);
-   BSON_ASSERT (num_binary < 10);
-   BSON_ASSERT (num_other < 10);
 
    /* Append some other filler fields */
    for (i = 0; i < num_other; i++) {
